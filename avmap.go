@@ -6,13 +6,28 @@ type Ints interface { // expanded constraints.Integer
 	~int | ~int8 | ~int16 | ~int32 | ~int64 | ~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr
 }
 
+type Addable interface {
+	constraints.Integer | constraints.Float | constraints.Complex | ~string
+}
+
 type Values interface {
-	constraints.Integer | constraints.Float | ~string
+	constraints.Integer | constraints.Float | constraints.Complex | ~string | ~bool
 }
 
 func SetIfMissing[K comparable, V any](m map[K]V, key K, value V) {
 	if _, ok := m[key]; !ok {
 		m[key] = value
+	}
+}
+
+// GetOrCreateRef can be used to set a default value of a reference type, and return it for further use
+func GetOrCreateRef[K comparable, VP *V, V any](m map[K]VP, key K) VP {
+	if v, ok := m[key]; ok {
+		return v
+	} else {
+		var zero V
+		m[key] = &zero
+		return &zero
 	}
 }
 
@@ -26,7 +41,7 @@ func Inc[K comparable, V Ints](m map[K]V, key K) {
 }
 
 // Add the value to the value at the key, create the key if not exists
-func Add[K comparable, V Values](m map[K]V, key K, value V) {
+func Add[K comparable, V Addable](m map[K]V, key K, value V) {
 	if _, ok := m[key]; !ok {
 		var zero V
 		m[key] = zero

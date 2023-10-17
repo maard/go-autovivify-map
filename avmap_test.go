@@ -18,7 +18,76 @@ func TestAVMapTestSuite(t *testing.T) {
 	suite.Run(t, new(AVMapTestSuite))
 }
 
-func (suite *AVMapTestSuite) TestBasics() {
+func (suite *AVMapTestSuite) TestSetIfMissing() {
+	var mi = map[string]int{
+		"a": 2,
+	}
+
+	SetIfMissing(mi, "a", 3)
+	SetIfMissing(mi, "a2", 3)
+
+	assert.Equal(suite.T(), 2, mi["a"])
+	assert.Equal(suite.T(), 3, mi["a2"])
+
+	var mb = map[int]bool{
+		1: false,
+	}
+
+	SetIfMissing(mb, 1, true)
+	SetIfMissing(mb, 2, true)
+
+	assert.Equal(suite.T(), false, mb[1])
+	assert.Equal(suite.T(), true, mb[2])
+}
+
+func (suite *AVMapTestSuite) TestGetOrCreateRef() {
+	v2 := 2
+	var m1 = map[string]*int{
+		"a": &v2,
+	}
+
+	assert.Equal(suite.T(), 2, *GetOrCreateRef(m1, "a"))
+	assert.Equal(suite.T(), 0, *GetOrCreateRef(m1, "b"))
+
+	_, exists := m1["b"]
+	assert.Equal(suite.T(), true, exists)
+
+	_, exists = m1["c"]
+	assert.Equal(suite.T(), false, exists)
+
+	var m2 = map[string]*[]int{
+		"a": {1},
+	}
+
+	array := GetOrCreateRef(m2, "a")
+	assert.Equal(suite.T(), 1, len(*array))
+	*array = append(*array, 2)
+	assert.Equal(suite.T(), 2, len(*array))
+	assert.Equal(suite.T(), 2, len(*m2["a"]))
+
+	array = GetOrCreateRef(m2, "b")
+	assert.Equal(suite.T(), 0, len(*array))
+	*array = append(*array, 2)
+	assert.Equal(suite.T(), 1, len(*array))
+	assert.Equal(suite.T(), 1, len(*m2["b"]))
+
+	type S struct{ name string }
+	var m3 = map[string]*S{
+		"a": {name: "a"},
+	}
+
+	sp := GetOrCreateRef(m3, "a")
+	assert.Equal(suite.T(), "a", sp.name)
+	sp.name = "c"
+	assert.Equal(suite.T(), "c", m3["a"].name)
+
+	sp = GetOrCreateRef(m3, "b")
+	assert.Equal(suite.T(), "", sp.name)
+	sp.name = "c"
+	assert.Equal(suite.T(), "c", m3["b"].name)
+}
+
+func (suite *AVMapTestSuite) TestInc() {
 	var m = map[string]int{
 		"a": 1,
 		"b": 2,
@@ -27,14 +96,8 @@ func (suite *AVMapTestSuite) TestBasics() {
 	Inc(m, "a")
 	Inc(m, "a2")
 
-	SetIfMissing(m, "b", 3)
-	SetIfMissing(m, "b2", 3)
-
 	assert.Equal(suite.T(), 2, m["a"])
 	assert.Equal(suite.T(), 1, m["a2"])
-
-	assert.Equal(suite.T(), 2, m["b"])
-	assert.Equal(suite.T(), 3, m["b2"])
 }
 
 func (suite *AVMapTestSuite) TestAdd() {
